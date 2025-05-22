@@ -1,234 +1,203 @@
-# HomeLab Dockerfiles Repository
+## Modular Images for Your Homelab
 
-This repository is a collection of Dockerfiles crafted to simplify the process of creating and deploying containerized applications for your HomeLab environment. Each branch corresponds to a unique application or service, allowing you to maintain modular and reusable configurations for building Docker images. This structure not only helps ensure consistency and scalability but also makes maintenance efficient and organized for your HomeLab infrastructure.
+This repository is a centralized workspace for building, managing, and deploying custom Docker images across your homelab infrastructure. Each service you maintain has its own isolated orphan branch, containing a minimal, self-sufficient setup: a `Dockerfile`, scripts, and config files placed directly at the branch root.
+
+The main branch hosts only this README. It acts as the entry point to all buildable services. Changes pushed to any service branch are picked up by [Komodo](https://github.com/moghtech/komodo), which takes care of the CI/CD flow — building the image, tagging and pushing it to the container registry, and finally deploying the updated container to the appropriate servers.
 
 ---
 
-## 🚀 Features
+## 📚 Table of Contents
 
-- **Curated Collection**: A variety of Dockerfiles for different applications and services.
-- **Version Control**: All configurations are version-controlled, ensuring repeatability and consistency in builds.
-- **Branch-Based Organization**: Each branch in the repository corresponds to a specific service or application.
-- **GitOps Integration**: Automatically builds and pushes Docker images using [Komodo](https://komo.do/docs/intro).
-- **Supports Container Orchestration**: Dockerfiles are optimized for integration with container orchestration tools and CI/CD pipelines.
+- [How It Works](#how-it-works)
+- [Branch Workflow](#branch-workflow)
+- [Requirements](#requirements)
+- [Repository Structure](#repository-structure)
+- [Build & Deploy Pipeline](#build--deploy-pipeline)
+- [Adding a New Service](#adding-a-new-service)
+- [End-to-End CI/CD Flow](#end-to-end-cicd-flow)
+- [FAQ & Troubleshooting](#faq--troubleshooting)
+
+---
+
+## ⚙️ How It Works
+
+This is not a typical monolithic Dockerfile repo. Each service exists on its own orphan branch. That means the branches don’t share any Git history. This makes each service's context lean, independent, and focused. You can treat any branch like its own micro-repo while still benefiting from centralized tracking and automation.
+
+Here’s what happens after a change:
+
+1. You push updates to an orphan branch (e.g., `grafana`, `gitea`, `traefik`, etc).
+2. Komodo detects the new commit.
+3. It builds the image using the Dockerfile in the branch root.
+4. Tags the image and pushes it to your registry.
+5. Komodo (or your configured webhook receiver) updates the container on your servers.
+
+---
+
+## 🌿 Branch Workflow
+
+Each service lives in an **orphan branch**, meaning:
+
+- No `.git` history with other services.
+- Files sit at the branch root.
+- Fast cloning and building.
+
+Branch names should be:
+
+- lowercase,
+- dash-separated,
+- clearly indicating the service (e.g., `pihole`, `minio`, `homepage`, `syncthing`).
+
+Komodo watches all branches for new commits. When it sees one, it treats it as a CI/CD trigger.
 
 ---
 
 ## 📦 Requirements
 
-Before using this repository, ensure you have the following installed on your system:
+Your system needs the following:
 
-- [Git](https://git-scm.com/)
-- [Docker](https://www.docker.com/) and Docker Compose
-- A GitOps tool like [Komodo](https://komo.do/docs/intro) configured with webhook or polling
+| Tool     | Purpose                                           | Installation Link                             |
+| -------- | ------------------------------------------------- | --------------------------------------------- |
+| Git      | Version control                                   | [git-scm](https://git-scm.com/)               |
+| Docker   | Image builds and container runtime                | [docker](https://docs.docker.com/get-docker/) |
+| Komodo   | GitOps-based CI/CD manager                        | [komodo](https://komo.do/)                    |
+| Webhooks | Optional: Trigger Komodo or deploy hook endpoints | Use any HTTP-capable webhook listener         |
 
-For Komodo documentation, visit: [Komodo Setup Guide](https://komo.do/docs/intro).
+> Assumes Ubuntu system. Use `apt install` or follow official docs for each.
 
 ---
 
 ## 📁 Repository Structure
 
-The repository's structure is organized in a way that each branch corresponds to a single application or service. Each branch typically contains the following files:
+While the `main` branch contains only the `README.md`, each service is maintained in an **orphan branch**. Here's a high-level view of the structure:
 
+```mermaid
+graph TD
+  Main["main (README only)"]
+  Grafana["grafana (Dockerfile + entrypoint)"]
+  Gitea["gitea (Dockerfile + config scripts)"]
+  Homepage["homepage (Dockerfile + static HTML)"]
+  Traefik["traefik (Dockerfile + dynamic config)"]
+  Syncthing["syncthing (Dockerfile + env templates)"]
+
+  Main --> Grafana
+  Main --> Gitea
+  Main --> Homepage
+  Main --> Traefik
+  Main --> Syncthing
 ```
-.
-├── Dockerfile             # Main Docker service definition
-├── .env                   # Optional file for environment variables
-├── setup.sh               # Optional initialization scripts for setup
-├── README.md              # Service-specific documentation (optional)
-```
 
-> ✅ Using orphan branches keeps service deployments clean, focused, and version-controlled.
+Each orphan branch includes:
 
-### Example Branches
+- `Dockerfile`: The blueprint for building the image.
+- `entrypoint.sh` or `run.sh`: Optional scripts for custom startup logic.
+- `config.json`, `settings.yaml`, etc.: Service-specific configuration.
+- `.env`, `.dockerignore`: When needed.
 
-- `Nginx` – A static web server with a custom configuration.
-- `Postgres` – A PostgreSQL container with init scripts.
-- `Nodejs-App` – Example configuration for a Node.js service.
+All files live at the **root** of their respective branches. No nested folders.
 
 ---
 
-## ⚙️ Getting Started
+## 🚀 Build & Deploy Pipeline
 
-### 1. Clone the Repository
+```mermaid
+sequenceDiagram
+  participant Dev as Developer
+  participant Git as Git Repo
+  participant Komodo as Komodo
+  participant Registry as Container Registry
+  participant Server as Homelab Server
 
-Start by cloning the repository to your local system:
+  Dev->>Git: Push to orphan branch (e.g., gitea)
+  Git->>Komodo: Webhook triggers on new commit
+  Komodo->>Git: Clone branch
+  Komodo->>Komodo: Build Docker image
+  Komodo->>Registry: Push image (tagged with branch + version)
+  Komodo->>Server: Deploy new image
+  Server-->>Dev: Updated container is live
+```
+
+---
+
+## 🆕 Adding a New Service
+
+1. Create a new orphan branch:
+
+   ```bash
+   git checkout --orphan <service-name>
+   ```
+
+2. Add your files:
+
+   ```bash
+   touch Dockerfile
+   nano Dockerfile
+   ```
+
+3. Commit and push:
+
+   ```bash
+   git add .
+   git commit -m "Initial commit for <service-name>"
+   git push origin <service-name>
+   ```
+
+4. Komodo handles the rest.
+
+---
+
+## 🧭 End-to-End CI/CD Flow
+
+```mermaid
+flowchart LR
+  subgraph Developer
+    A1[Edit service branch]
+    A2[Commit & Push]
+  end
+  subgraph GitHub Repo
+    B1[Trigger webhook]
+  end
+  subgraph Komodo CI/CD
+    C1[Build Docker Image]
+    C2[Push to Registry]
+    C3[Trigger Deployment]
+  end
+  subgraph Server
+    D1[Pull updated image]
+    D2[Deploy container]
+  end
+  A1 --> A2 --> B1 --> C1 --> C2 --> C3 --> D1 --> D2
+```
+
+---
+
+## ❓ FAQ & Troubleshooting
+
+**Q: What happens if I forget to make an orphan branch?**  
+A: You'll pull in history from `main` or another service. Run `git checkout --orphan your-service` to fix it.
+
+**Q: Why isn’t my container updating?**  
+A:
+
+- Make sure your branch was pushed to origin.
+- Check Komodo’s logs.
+- Validate that the Dockerfile doesn’t have build errors.
+
+**Q: Can I use secrets or credentials?**  
+A: Yes. Use `.env` or configure secrets directly in Komodo.
+
+**Q: I want to test a Dockerfile locally before pushing.**  
+A:
 
 ```bash
-git clone https://{{git-source}}/{{user-name}}/{{repo-name}}.git
-cd {{repo-name}}
+docker build -t test-image .
+docker run -it --rm test-image
 ```
 
-### 2. Create a New Orphan Branch
+**Tips:**
 
-```bash
-git checkout --orphan <ServiceName>
-```
-
-### 3. Add Your Files
-
-For each application or service, your branch should contain the following files:
-
-- `Dockerfile` – The main service definition.
-- Supporting files – This may include `.env`, scripts, or other configuration files.
-- `README.md` – Service-specific notes (optional but recommended for documentation).
-
----
-
-### 4. Komodo GitOps Automation
-
-After pushing your changes, **Komodo** will automatically:
-
-1. Detect the new commit on your branch.
-2. Build the Docker image using the provided `Dockerfile`.
-3. Tag the Docker image and push it to the configured container registry.
-
-#### Komodo Setup Instructions
-
-1. **Add Your Repository**: Go to the Komodo UI and add your repository.
-2. **Configure Build Pipeline**: Set up the build pipeline with your repository settings, including the repository URL and access credentials.
-3. **Enable Auto-Sync**: Configure auto-sync (or manual approval mode) to automatically trigger builds when a commit is detected.
-4. **Configure Webhook or Polling**: Set up webhooks or polling in Komodo to trigger builds on new commits.
-
-For detailed instructions on setting up Komodo with your repository, see the [Komodo CI/CD Webhook Setup](https://komo.do/docs/webhooks).
-
----
-
-### 5. Push the Branch
-
-Once your changes are ready, commit and push the new branch:
-
-```bash
-git add .
-git commit -m "Add Dockerfile for Nginx"
-git push origin Nginx
-```
-
----
-
-## 🧰 Bash Helpers
-
-These aliases and functions can be added to your `.bashrc`, `.zshrc`, or `.bash_aliases` for ease of use.
-
-### Pull All Branches and Sync
-
-This function fetches all remote branches and ensures they are synchronized with your local branches:
-
-```bash
-alias pullall='
-git fetch --prune --all && \
-current_branch=$(git branch --show-current); \
-for local_branch in $(git branch --format="%(refname:short)"); do \
-  if ! git show-ref --verify --quiet refs/remotes/origin/$local_branch; then \
-    echo "🧹 Deleting local branch $local_branch (no longer exists on origin)..."; \
-    git branch -D $local_branch; \
-  fi; \
-done; \
-for remote_branch in $(git branch -r | grep -v "\->" | sed "s|origin/||"); do \
-  if git show-ref --verify --quiet refs/heads/$remote_branch; then \
-    echo "🔍 Checking branch $remote_branch (already exists locally)..."; \
-    ahead=$(git rev-list --left-right --count $remote_branch...origin/$remote_branch | awk "{print \$1}"); \
-    behind=$(git rev-list --left-right --count $remote_branch...origin/$remote_branch | awk "{print \$2}"); \
-    if [ "$ahead" = "0" ] && [ "$behind" != "0" ]; then \
-      echo "  ⏩ Fast-forwarding $remote_branch..."; \
-      git update-ref refs/heads/$remote_branch refs/remotes/origin/$remote_branch; \
-    elif [ "$ahead" = "0" ] && [ "$behind" = "0" ]; then \
-      echo "  ✅ $remote_branch is already up-to-date."; \
-    else \
-      echo "  ⚠️ $remote_branch has diverged! Needs manual pull/merge."; \
-    fi; \
-  else \
-    echo "🌱 Creating missing local branch $remote_branch tracking origin/$remote_branch..."; \
-    git branch $remote_branch origin/$remote_branch; \
-  fi; \
-done; \
-git checkout $current_branch'
-```
-
-### Orphan Branch Creator
-
-This function creates an orphan branch, which is useful for starting a new service or application:
-
-```bash
-orphan() {
-    if [ -z "$1" ]; then
-        echo "Usage: orphan <branch-name>"
-        return 1
-    fi
-    git checkout --orphan "$1"
-}
-```
-
-### Enable Git Autocompletion
-
-To enable Git autocompletion in your terminal, add this line:
-
-```bash
-source /usr/share/bash-completion/completions/git
-```
-
----
-
-## 📝 Best Practices
-
-- **Keep Dockerfiles Clean**: Avoid unnecessary packages and complexity. Keep them as simple and modular as possible.
-- **Use Official Base Images**: Whenever possible, use official or well-maintained base images for better security and stability.
-- **Store Secrets Securely**: Do not hardcode secrets into Dockerfiles. Use environment variables or external secrets management tools.
-- **Document Everything**: Include a `README.md` in every branch to explain the purpose of the service and any important configurations.
-
----
-
-## 🔁 CI/CD Flow with Komodo
-
-The CI/CD flow involves multiple steps that automate the build and deployment process:
-
-```
-Git Branch (e.g., Nginx)
-        ↓
-  Git Commit & Push
-        ↓
-     Komodo CI/CD
-        ↓
- Docker Build & Tag
-        ↓
- Docker Image Pushed to Registry
-        ↓
-     Optional Deployment Trigger
-```
-
----
-
-## 🔧 Deployment Troubleshooting
-
-### 1. Build Failures
-
-If your Docker build fails, common issues include:
-
-- **Missing dependencies**: Ensure all required files are in the Docker context.
-- **Dockerfile syntax errors**: Double-check for typos or incorrect commands.
-
-### 2. Komodo Build Failures
-
-If Komodo's build pipeline fails, check:
-
-- **Build Logs**: Review the logs in the Komodo UI for detailed error messages.
-- **Missing Files**: Ensure all necessary files are committed and available for the build.
-- **Branch Configuration**: Verify that the correct branch is being watched by Komodo.
-
-### 3. Deployment Not Triggering
-
-If your deployment doesn't trigger:
-
-- **Webhook Issues**: Ensure the webhook or polling is set up correctly.
-- **Sync Problems**: Manually trigger a build in Komodo or check sync settings.
-
-### 4. Docker Deployment Issues
-
-If your container isn't working correctly:
-
-- **Port Conflicts**: Check that the ports are available and not already in use.
-- **Environment Variables**: Verify that the correct environment variables are set.
-- **Logs**: Use `docker logs <your-container-name>` to review container logs for errors.
+- Avoid `latest` tag in Komodo; use `git rev-parse --short HEAD` as the tag.
+- Always use relative paths.
+- Avoid base images with high CVEs.
 
 ---
 **THIS REPOSITORY IS ENCRYPTED. IF YOU'RE HERE, YOU'RE EITHER VERY BRAVE OR VERY LOST. EITHER WAY, GOOD LUCK!**
