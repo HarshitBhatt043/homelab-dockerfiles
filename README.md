@@ -1,4 +1,10 @@
-## Modular Images for Your Homelab
+# Modular Images for Your Homelab
+
+[![HomeLab](https://img.shields.io/badge/HomeLab-Custom%20Images-4CAF50?style=for-the-badge&logo=serverfault&logoColor=white)]()
+[![Docker](https://img.shields.io/badge/Docker-Image%20Builds-2496ED?style=for-the-badge&logo=docker&logoColor=white)]()
+[![GitOps](https://img.shields.io/badge/GitOps-Branch%20Per%20Service-0A7ACC?style=for-the-badge&logo=git&logoColor=white)]()
+[![Komodo](https://img.shields.io/badge/Komodo-CI%2FCD%20Automation-6E40C9?style=for-the-badge&logo=replit&logoColor=white)]()
+[![CI/CD](https://img.shields.io/badge/CI%2FCD-Auto%20Build%20%26%20Deploy-FF9800?style=for-the-badge&logo=githubactions&logoColor=white)]()
 
 This repository is a centralized workspace for building, managing, and deploying custom Docker images across your homelab infrastructure. Each service you maintain has its own isolated orphan branch, containing a minimal, self-sufficient setup: a `Dockerfile`, scripts, and config files placed directly at the branch root.
 
@@ -6,7 +12,7 @@ The main branch hosts only this README. It acts as the entry point to all builda
 
 ---
 
-## 📚 Table of Contents
+## 📚 Table of Contents <a id="table-of-contents"></a>
 
 - [How It Works](#how-it-works)
 - [Branch Workflow](#branch-workflow)
@@ -19,7 +25,7 @@ The main branch hosts only this README. It acts as the entry point to all builda
 
 ---
 
-## ⚙️ How It Works
+## ⚙️ How It Works <a id="how-it-works"></a>
 
 This is not a typical monolithic Dockerfile repo. Each service exists on its own orphan branch. That means the branches don’t share any Git history. This makes each service's context lean, independent, and focused. You can treat any branch like its own micro-repo while still benefiting from centralized tracking and automation.
 
@@ -33,7 +39,7 @@ Here’s what happens after a change:
 
 ---
 
-## 🌿 Branch Workflow
+## 🌿 Branch Workflow <a id="branch-workflow"></a>
 
 Each service lives in an **orphan branch**, meaning:
 
@@ -51,7 +57,7 @@ Komodo watches all branches for new commits. When it sees one, it treats it as a
 
 ---
 
-## 📦 Requirements
+## 📦 Requirements <a id="requirements"></a>
 
 Your system needs the following:
 
@@ -66,7 +72,7 @@ Your system needs the following:
 
 ---
 
-## 📁 Repository Structure
+## 📁 Repository Structure <a id="repository-structure"></a>
 
 While the `main` branch contains only the `README.md`, each service is maintained in an **orphan branch**. Here's a high-level view of the structure:
 
@@ -97,7 +103,7 @@ All files live at the **root** of their respective branches. No nested folders.
 
 ---
 
-## 🚀 Build & Deploy Pipeline
+## 🚀 Build & Deploy Pipeline <a id="build--deploy-pipeline"></a>
 
 ```mermaid
 sequenceDiagram
@@ -118,7 +124,7 @@ sequenceDiagram
 
 ---
 
-## 🆕 Adding a New Service
+## 🆕 Adding a New Service <a id="adding-a-new-service"></a>
 
 1. Create a new orphan branch:
 
@@ -145,7 +151,7 @@ sequenceDiagram
 
 ---
 
-## 🧭 End-to-End CI/CD Flow
+## 🧭 End-to-End CI/CD Flow <a id="end-to-end-cicd-flow"></a>
 
 ```mermaid
 flowchart LR
@@ -170,7 +176,7 @@ flowchart LR
 
 ---
 
-## ❓ FAQ & Troubleshooting
+## ❓ FAQ & Troubleshooting <a id="faq--troubleshooting"></a>
 
 **Q: What happens if I forget to make an orphan branch?**  
 A: You'll pull in history from `main` or another service. Run `git checkout --orphan your-service` to fix it.
@@ -200,4 +206,6 @@ docker run -it --rm test-image
 - Avoid base images with high CVEs.
 
 ---
+
+[⬆️ Back to Top](#table-of-contents)
 **THIS REPOSITORY IS ENCRYPTED. IF YOU'RE HERE, YOU'RE EITHER VERY BRAVE OR VERY LOST. EITHER WAY, GOOD LUCK!**
